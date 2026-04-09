@@ -24,11 +24,32 @@ async def send_statistics(message):
     await bot.reply_to(message, user_text)
 
 
-@bot.message_handler(func=lambda message: True if message.text.startswith("https://") else False)
+# @bot.message_handler(func=lambda message: True if message.text.startswith("https://") else False)
+# async def process_text_message(message):
+#     if message.text.startswith("https://"):
+#         short_url = await Shortener.create_short_url(urls_collection, message.text, message.from_user.id)
+#         await bot.send_message(message.chat.id, f"Short url: http://127.0.0.1:8000/{short_url}")
+
+
+@bot.message_handler(func=lambda message: True)
 async def process_text_message(message):
-    if message.text.startswith("https://"):
-        short_url = await Shortener.create_short_url(urls_collection, message.text, message.from_user.id)
+    text = message.text.strip()
+
+    if text.startswith("http://") or text.startswith("https://"):
+        short_url = await Shortener.create_short_url(
+            urls_collection,
+            text,
+            message.from_user.id
+        )
         await bot.send_message(message.chat.id, f"Short url: http://127.0.0.1:8000/{short_url}")
+        return
+
+    url_data = await urls_collection.find_one({"short_url": text})
+    if url_data:
+        await bot.send_message(message.chat.id, f"Long url: {url_data.get('long_url')}")
+    else:
+        await bot.send_message(message.chat.id, "Short URL not found")
+
 
 
 if __name__ == "__main__":
